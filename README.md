@@ -42,6 +42,12 @@ golangci-lint run --output.checkstyle.path=report.xml ./...
 
 # SARIF output (GitHub code scanning)
 golangci-lint run --output.sarif.path=report.sarif ./...
+
+# Format the code (gofmt + gofumpt + gci + golines)
+golangci-lint fmt ./...
+
+# Show what the formatters would change without writing anything
+golangci-lint fmt --diff ./...
 ```
 
 Verify the configuration itself:
@@ -57,7 +63,10 @@ golangci-lint linters                # linters enabled / disabled by this config
 ### Linters
 
 - Base: `linters.default: standard` (`errcheck`, `govet`, `ineffassign`, `staticcheck`, `unused`).
-- ~65 additional linters (71 in total), mainly: bugs (`bodyclose`, `errorlint`, `nilerr`, `nilnesserr`, `contextcheck`, `containedctx`, `fatcontext`), security (`gosec`, `bidichk`), SQL (`sqlclosecheck`, `rowserrcheck`) and tests (`paralleltest`, `tparallel`, `thelper`, `testifylint`, `usetesting`).
+- 66 additional linters (71 in total, counting the five from `standard`), mainly: bugs (`bodyclose`, `errorlint`, `nilerr`, `nilnesserr`, `contextcheck`, `containedctx`, `fatcontext`), security (`gosec`, `bidichk`), SQL (`sqlclosecheck`, `rowserrcheck`) and tests (`paralleltest`, `tparallel`, `thelper`, `testifylint`, `usetesting`).
+- Standard library usage and modernization: `usestdlibvars` (`http.StatusOK`, `http.MethodGet`, ...), `modernize`, `intrange`, `exptostd`.
+- `govet` runs with `enable-all: true`, except `fieldalignment` and `shadow` (too noisy).
+- `errcheck` is strict (`check-type-assertions`, `check-blank`) but keeps its built-in exclusion list (`Close`, `Flush`, ...), consistent with the `std-error-handling` preset.
 - Some stack-specific linters (`clickhouselint`, `promlinter`, `zerologlint`, `sloglint`, `protogetter`): they stay silent as long as the matching libraries are not used.
 - `exhaustive` only checks `switch` statements, on package-scope enums, and a `default` case counts as exhaustive.
 
@@ -65,54 +74,61 @@ golangci-lint linters                # linters enabled / disabled by this config
 
 | Linter | Threshold |
 | --- | --- |
-| `cyclop` / `gocyclo` | complexity 25 |
+| `cyclop` | complexity 25 (package average 10) |
 | `gocognit` | complexity 25 |
 | `funlen` | 120 lines (statement count disabled) |
 | `dupl` | 200 tokens |
-| `lll` | 120 characters |
-| `nestif` | disabled (covered by `gocognit`) |
+| `lll` | 120 characters (tab counted as 1) |
+| `golines` (formatter) | 120 characters (tab counted as 1, same as `lll`) |
+| `gocyclo`, `nestif` | disabled (covered by `cyclop` and `gocognit`) |
 
 ### Exclusions
 
-- Presets: `comments`, `common-false-positives`, `legacy`, `std-error-handling`.
-- Test files: relaxed on `errcheck`, complexity, `dupl`, `lll`, `gosec`, `forbidigo`, etc.
-- `*mock.go` files: `dupl`, `errcheck`, complexity, `gosec`.
-- Ignored directories: `vendor/`, `services/`, `tmp/` (adapt to your project).
+- Presets: `common-false-positives` and `std-error-handling` only. `comments` and `legacy` are intentionally not used: `revive` is disabled so `comments` has nothing to hide, and `legacy` masks too much.
+- Test files: relaxed on `errcheck`, complexity (`cyclop`, `gocognit`, `funlen`), `dupl`, `lll`, `gosec`, `forbidigo`, etc.
+- `*mock.go` files: `dupl`, `errcheck`, `gocognit`, `gosec`, `prealloc`.
+- Ignored directories: `vendor/`, `tmp/` (adapt to your project).
 - Generated files: `lax` mode.
+- `warn-unused: true` on both `linters.exclusions` and `formatters.exclusions`: golangci-lint warns when an exclusion rule or path no longer matches anything, so stale rules do not pile up.
 
 ### Severities
 
-`severity.default: error`, with 71 linters spread across three levels:
+`severity.default: error`, with the 71 enabled linters spread across three levels:
 
 | Level | Count | Purpose |
 | --- | --- | --- |
 | `error` | 14 | proven bugs, security, contexts, SQL |
-| `warning` | 17 | quality, unchecked errors, dead code, tests |
-| `info` | 40 | style, naming, modernization |
+| `warning` | 16 | quality, unchecked errors, dead code, tests |
+| `info` | 41 | style, naming, modernization |
 
-Severities are only used by output formats that support them (checkstyle, SARIF, code-climate). **They do not change the exit code**: any issue still makes `golangci-lint run` fail.
-
+Severities are only used by output formats that support them (checkstyle, SARIF, code-climate), for example to rank issues once imported into SonarQube. **They do not change the exit code**: any issue still makes `golangci-lint run` fail.
 <details>
 <summary>Full list</summary>
 
 - **error**: `clickhouselint`, `containedctx`, `contextcheck`, `copyloopvar`, `cyclop`, `forbidigo`, `gocritic`, `gosec`, `govet`, `mirror`, `noctx`, `rowserrcheck`, `sqlclosecheck`, `zerologlint`
-- **warning**: `bidichk`, `bodyclose`, `errcheck`, `errchkjson`, `fatcontext`, `funlen`, `gocheckcompilerdirectives`, `gocognit`, `gocyclo`, `ineffassign`, `nosprintfhostport`, `paralleltest`, `reassign`, `sloglint`, `tparallel`, `unused`, `usetesting`
-- **info**: `asasalint`, `asciicheck`, `canonicalheader`, `dogsled`, `dupl`, `durationcheck`, `embeddedstructfieldcheck`, `errname`, `errorlint`, `exhaustive`, `exptostd`, `gochecknoinits`, `godot`, `godox`, `goprintffuncname`, `iface`, `inamedparam`, `intrange`, `lll`, `loggercheck`, `makezero`, `modernize`, `musttag`, `nilerr`, `nilnesserr`, `nilnil`, `nonamedreturns`, `perfsprint`, `prealloc`, `predeclared`, `promlinter`, `protogetter`, `staticcheck`, `testifylint`, `testpackage`, `thelper`, `unconvert`, `unparam`, `wastedassign`, `whitespace`
+- **warning**: `bidichk`, `bodyclose`, `errcheck`, `errchkjson`, `fatcontext`, `funlen`, `gocheckcompilerdirectives`, `gocognit`, `ineffassign`, `nosprintfhostport`, `paralleltest`, `reassign`, `sloglint`, `tparallel`, `unused`, `usetesting`
+- **info**: `asasalint`, `asciicheck`, `canonicalheader`, `dogsled`, `dupl`, `durationcheck`, `embeddedstructfieldcheck`, `errname`, `errorlint`, `exhaustive`, `exptostd`, `gochecknoinits`, `godot`, `godox`, `goprintffuncname`, `iface`, `inamedparam`, `intrange`, `lll`, `loggercheck`, `makezero`, `modernize`, `musttag`, `nilerr`, `nilnesserr`, `nilnil`, `nonamedreturns`, `perfsprint`, `prealloc`, `predeclared`, `promlinter`, `protogetter`, `staticcheck`, `testifylint`, `testpackage`, `thelper`, `unconvert`, `unparam`, `usestdlibvars`, `wastedassign`, `whitespace`
 
 </details>
 
 ### Formatters
 
-No formatter is enabled (`formatters.enable: []`): formatting must be handled elsewhere (IDE, pre-commit, `gofmt`). To integrate it into golangci-lint:
+Four formatters are enabled:
 
-```yaml
-formatters:
-  enable:
-    - gofumpt
-    - goimports
-```
+| Formatter | Settings | Role |
+| --- | --- | --- |
+| `gofmt` | `simplify: true`, rewrite rules `interface{}` → `any` and `a[b:len(a)]` → `a[b:]` | standard formatting plus simplifications |
+| `gofumpt` | `extra-rules: true` | stricter `gofmt` (also groups adjacent parameters of the same type) |
+| `gci` | sections `standard`, `default`, `localmodule`, `custom-order: true` | deterministic import grouping: standard library, then third-party, then your own module |
+| `golines` | `max-len: 120`, `tab-len: 1` | wraps long lines, aligned with the `lll` linter |
 
-then `golangci-lint fmt`.
+Apply them with `golangci-lint fmt ./...` (or `golangci-lint run --fix ./...`).
+
+Things to know:
+
+- `golines` does not wrap comments or long string literals, so `lll` stays enabled for those.
+- `gci` puts imports of your own module (read from `go.mod`) in a separate last group, after the third-party ones.
+- `gofumpt` is a superset of `gofmt`: keeping `gofmt` is harmless and is what provides the rewrite rules.
 
 ### Intentionally disabled linters
 
@@ -123,6 +139,7 @@ then `golangci-lint fmt`.
 | `godoclint` | documentation is not enforced |
 | `goconst`, `mnd` | noise with no real benefit |
 | `decorder`, `importas`, `nakedret`, `nestif` | redundant or ineffective without dedicated configuration |
+| `gocyclo` | duplicates `cyclop` (same metric); `cyclop` and `gocognit` are kept |
 | `forcetypeassert` | covered by `errcheck` (`check-type-assertions: true`) |
 | `arangolint`, `ginkgolinter` | enable only when ArangoDB / Ginkgo are used |
 
@@ -131,7 +148,7 @@ then `golangci-lint fmt`.
 - `run.timeout: 0s`: no internal timeout — configure one on the CI side.
 - `run.allow-parallel-runners: true`: allows simultaneous runs (IDE + terminal + CI).
 - `issues.max-same-issues: 0`: no limit on duplicate issues (watch the output volume on a large codebase).
-- Fails on the first issue (`issues-exit-code: 1`).
+- Exit code 1 as soon as at least one issue is reported (`issues-exit-code: 1`), whatever its severity.
 
 ## CI integration (GitHub Actions example)
 
@@ -144,15 +161,26 @@ then `golangci-lint fmt`.
 
 Pin the golangci-lint version in CI: any version older than 2.13 rejects this configuration.
 
+### SonarQube
+
+The checkstyle report carries the `severity` attribute defined in the `severity` section, and can be imported with the Sonar Go analyzer:
+
+```properties
+sonar.go.golangci-lint.reportPaths=report.xml
+```
+
+How Sonar maps `error` / `warning` / `info` to its own severities is not documented in the official docs: check the result on a first import.
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
 | --- | --- |
 | `unknown linters: clickhouselint` | golangci-lint older than 2.12 |
 | Useless `//nolint` directives are not reported | `nolintlint` is intentionally disabled |
-| No formatting issue is reported | no formatter enabled (see above) |
+| Formatting issues reported (`gofmt`, `gofumpt`, `gci`, `golines`) | run `golangci-lint fmt ./...` |
+| Long lines still reported by `lll` | comments and string literals are not wrapped by `golines` |
 | A directory is not analyzed | it is listed in `linters.exclusions.paths` |
-| Duplicate issues on the same function | both `gocyclo` and `cyclop` are enabled |
+| `t.Setenv` / `t.Chdir` panics with `t.Parallel()` | `usetesting` (`os-setenv`, `os-chdir`) and `paralleltest` cannot both be satisfied in a test that touches the environment: use a targeted `//nolint:paralleltest // reason` |
 
 ## Maintenance
 
