@@ -93,21 +93,23 @@ golangci-lint linters                # linters enabled / disabled by this config
 
 ### Severities
 
-`severity.default: error`, with the 71 enabled linters spread across three levels:
+`severity.default: warning` (a new linter or formatter that is not classified yet never shows up as a blocker by accident), with the 71 enabled linters spread across three levels:
 
 | Level | Count | Purpose |
 | --- | --- | --- |
-| `error` | 14 | proven bugs, security, contexts, SQL |
-| `warning` | 16 | quality, unchecked errors, dead code, tests |
-| `info` | 41 | style, naming, modernization |
+| `error` | 18 + `staticcheck` (`SA*`) | probable bugs, resource leaks, security, unchecked errors, contexts, SQL |
+| `warning` | 32 | code smells: complexity, dead code, test hygiene, API design |
+| `info` | 20 + `staticcheck` (`S1*`, `ST*`, `QF*`) | style, naming, modernization |
+
+`staticcheck` is split by check ID using the `text` field of the severity rules: `SA*` checks are bugs (`error`), `S1*` / `ST*` / `QF*` are simplifications and style (`info`).
 
 Severities are only used by output formats that support them (checkstyle, SARIF, code-climate), for example to rank issues once imported into SonarQube. **They do not change the exit code**: any issue still makes `golangci-lint run` fail.
 <details>
 <summary>Full list</summary>
 
-- **error**: `clickhouselint`, `containedctx`, `contextcheck`, `copyloopvar`, `cyclop`, `forbidigo`, `gocritic`, `gosec`, `govet`, `mirror`, `noctx`, `rowserrcheck`, `sqlclosecheck`, `zerologlint`
-- **warning**: `bidichk`, `bodyclose`, `errcheck`, `errchkjson`, `fatcontext`, `funlen`, `gocheckcompilerdirectives`, `gocognit`, `ineffassign`, `nosprintfhostport`, `paralleltest`, `reassign`, `sloglint`, `tparallel`, `unused`, `usetesting`
-- **info**: `asasalint`, `asciicheck`, `canonicalheader`, `dogsled`, `dupl`, `durationcheck`, `embeddedstructfieldcheck`, `errname`, `errorlint`, `exhaustive`, `exptostd`, `gochecknoinits`, `godot`, `godox`, `goprintffuncname`, `iface`, `inamedparam`, `intrange`, `lll`, `loggercheck`, `makezero`, `modernize`, `musttag`, `nilerr`, `nilnesserr`, `nilnil`, `nonamedreturns`, `perfsprint`, `prealloc`, `predeclared`, `promlinter`, `protogetter`, `staticcheck`, `testifylint`, `testpackage`, `thelper`, `unconvert`, `unparam`, `usestdlibvars`, `wastedassign`, `whitespace`
+- **error**: `bodyclose`, `clickhouselint`, `contextcheck`, `durationcheck`, `errcheck`, `errchkjson`, `errorlint`, `fatcontext`, `gosec`, `govet`, `makezero`, `musttag`, `nilerr`, `nilnesserr`, `noctx`, `rowserrcheck`, `sqlclosecheck`, `zerologlint`, and `staticcheck` for `SA*` checks
+- **warning**: `asasalint`, `bidichk`, `containedctx`, `copyloopvar`, `cyclop`, `dupl`, `exhaustive`, `exptostd`, `forbidigo`, `funlen`, `gocheckcompilerdirectives`, `gochecknoinits`, `gocognit`, `gocritic`, `ineffassign`, `loggercheck`, `mirror`, `nilnil`, `nonamedreturns`, `nosprintfhostport`, `paralleltest`, `promlinter`, `protogetter`, `reassign`, `sloglint`, `testifylint`, `testpackage`, `tparallel`, `unparam`, `unused`, `usetesting`, `wastedassign`
+- **info**: `asciicheck`, `canonicalheader`, `dogsled`, `embeddedstructfieldcheck`, `errname`, `godot`, `godox`, `goprintffuncname`, `iface`, `inamedparam`, `intrange`, `lll`, `modernize`, `perfsprint`, `prealloc`, `predeclared`, `thelper`, `unconvert`, `usestdlibvars`, `whitespace`, and `staticcheck` for `S1*`, `ST*` and `QF*` checks
 
 </details>
 
@@ -185,5 +187,5 @@ How Sonar maps `error` / `warning` / `info` to its own severities is not documen
 ## Maintenance
 
 - After any change to the file: `golangci-lint config verify`.
-- After adding or removing a linter: `golangci-lint linters`, and remember to update the `severity` section (linters not listed there inherit `default: error`).
+- After adding or removing a linter: `golangci-lint linters`, and remember to update the `severity` section (linters not listed there inherit `default: warning`).
 - References: [linter list](https://golangci-lint.run/docs/linters/) and [per-linter settings](https://golangci-lint.run/docs/linters/configuration/).

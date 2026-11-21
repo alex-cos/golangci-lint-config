@@ -462,58 +462,88 @@ issues:
 
 severity:
   # Set the default severity for issues.
-  default: error
+  # Anything not listed below (new linters, formatters) is a warning, never a blocker by accident.
+  default: warning
+  # Severities are exported in the checkstyle report (SonarQube import).
+  # They do not change the exit code.
   rules:
+    # staticcheck mixes bugs (SA) and style/simplifications (S1, ST, QF): split them by check ID.
+    # The two patterns are disjoint, so the order of these two rules does not matter.
     - severity: error
       linters:
+        - staticcheck
+      text: '^SA\d+'
+    - severity: info
+      linters:
+        - staticcheck
+      text: '^(S1|ST|QF)\d+'
+
+    # Probable bugs, resource leaks, security.
+    - severity: error
+      linters:
+        - bodyclose
         - clickhouselint
-        - containedctx
         - contextcheck
-        - copyloopvar
-        - cyclop
-        - forbidigo
-        - gocritic
+        - durationcheck
+        - errcheck
+        - errchkjson
+        - errorlint
+        - fatcontext
         - gosec
         - govet
-        - mirror
+        - makezero
+        - musttag
+        - nilerr
+        - nilnesserr
         - noctx
         - rowserrcheck
         - sqlclosecheck
         - zerologlint
 
+    # Code smells: complexity, dead code, test hygiene, API design.
     - severity: warning
       linters:
+        - asasalint
         - bidichk
-        - bodyclose
-        - errcheck
-        - errchkjson
-        - fatcontext
+        - containedctx
+        - copyloopvar
+        - cyclop
+        - dupl
+        - exhaustive
+        - exptostd
+        - forbidigo
         - funlen
         - gocheckcompilerdirectives
+        - gochecknoinits
         - gocognit
+        - gocritic
         - ineffassign
+        - loggercheck
+        - mirror
+        - nilnil
+        - nonamedreturns
         - nosprintfhostport
         - paralleltest
+        - promlinter
+        - protogetter
         - reassign
         - sloglint
+        - testifylint
+        - testpackage
         - tparallel
+        - unparam
         - unused
         - usetesting
+        - wastedassign
 
+    # Style, naming, modernization.
     - severity: info
       linters:
-        - asasalint
         - asciicheck
         - canonicalheader
         - dogsled
-        - dupl
-        - durationcheck
         - embeddedstructfieldcheck
         - errname
-        - errorlint
-        - exhaustive
-        - exptostd
-        - gochecknoinits
         - godot
         - godox
         - goprintffuncname
@@ -521,27 +551,13 @@ severity:
         - inamedparam
         - intrange
         - lll
-        - loggercheck
-        - makezero
         - modernize
-        - musttag
-        - nilerr
-        - nilnesserr
-        - nilnil
-        - nonamedreturns
         - perfsprint
         - prealloc
         - predeclared
-        - promlinter
-        - protogetter
-        - staticcheck
-        - testifylint
-        - testpackage
         - thelper
         - unconvert
-        - unparam
         - usestdlibvars
-        - wastedassign
         - whitespace
 
 formatters:
