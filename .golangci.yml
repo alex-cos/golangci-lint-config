@@ -427,24 +427,9 @@ linters:
           - noctx
           - perfsprint
           - prealloc
-      - path: (.*)mock\.go$
-        linters:
-          - dupl
-          - errcheck
-          - gocognit
-          - gosec
-          - prealloc
-      - linters:
-          - gocritic
-        text: "unnecessaryDefer:"
-      - linters:
-          - lll
-        source: "^//go:generate "
     # Which file paths to exclude: they will be analyzed, but issues from them won't be reported.
     # Default: []
-    paths:
-      - vendor
-      - tmp
+    paths: []
     warn-unused: true
 
 issues:
@@ -598,10 +583,10 @@ formatters:
       # Apply the rewrite rules to the source before reformatting.
       # Default: []
       rewrite-rules:
-        - pattern: 'interface{}'
-          replacement: 'any'
-        - pattern: 'a[b:len(a)]'
-          replacement: 'a[b:]'
+        - pattern: "interface{}"
+          replacement: "any"
+        - pattern: "a[b:len(a)]"
+          replacement: "a[b:]"
     gofumpt:
       extra-rules: true
     golines:

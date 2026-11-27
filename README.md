@@ -86,9 +86,8 @@ golangci-lint linters                # linters enabled / disabled by this config
 
 - Presets: `common-false-positives` and `std-error-handling` only. `comments` and `legacy` are intentionally not used: `revive` is disabled so `comments` has nothing to hide, and `legacy` masks too much.
 - Test files: relaxed on `errcheck`, complexity (`cyclop`, `gocognit`, `funlen`), `dupl`, `lll`, `gosec`, `forbidigo`, etc.
-- `*mock.go` files: `dupl`, `errcheck`, `gocognit`, `gosec`, `prealloc`.
-- Ignored directories: `vendor/`, `tmp/` (adapt to your project).
-- Generated files: `lax` mode.
+- Ignored directories: none (`linters.exclusions.paths: []`); add the paths specific to your project there. `vendor/` is already left out of `./...` when using Go modules.
+- Generated files: `lax` mode. This covers generated mocks (`mockgen`, `mockery`, ...) as long as they carry a "Code generated" header; hand-written mocks are linted like any other file.
 - `warn-unused: true` on both `linters.exclusions` and `formatters.exclusions`: golangci-lint warns when an exclusion rule or path no longer matches anything, so stale rules do not pile up.
 
 ### Severities
